@@ -79,6 +79,7 @@ gem 'dropzonejs-rails'
 
 # for aws storage
 gem "fog", "~> 1.14"
+gem "azure"
 gem "unf"
 
 # Authorization
