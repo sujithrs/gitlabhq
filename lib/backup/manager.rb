@@ -2,6 +2,10 @@ module Backup
   class Manager
     BACKUP_CONTENTS = %w{repositories/ db/ uploads/ backup_information.yml}
 
+    def remote_storage
+      @remote_storage ||= RemoteStorage.new(Gitlab.config.backup.upload)
+    end
+
     def pack
       # saving additional informations
       s = {}
@@ -26,27 +30,7 @@ module Backup
         abort 'Backup failed'
       end
 
-      upload(tar_file)
-    end
-
-    def upload(tar_file)
-      remote_directory = Gitlab.config.backup.upload.remote_directory
-      $progress.print "Uploading backup archive to remote storage #{remote_directory} ... "
-
-      connection_settings = Gitlab.config.backup.upload.connection
-      if connection_settings.blank?
-        $progress.puts "skipped".yellow
-        return
-      end
-
-      connection = ::Fog::Storage.new(connection_settings)
-      directory = connection.directories.get(remote_directory)
-      if directory.files.create(key: tar_file, body: File.open(tar_file), public: false)
-        $progress.puts "done".green
-      else
-        puts "uploading backup to #{remote_directory} failed".red
-        abort 'Backup failed'
-      end
+      remote_storage.upload(tar_file)
     end
 
     def cleanup
